@@ -2,8 +2,6 @@
 network_scanner.py
 ------------------
 Клиентская часть для сканирования удалённого устройства по сети.
-Работает так же как DirectoryScanner из scanner.py, только данные
-берёт не с локального диска, а с сервера на другом устройстве.
 """
 
 import json
@@ -18,19 +16,6 @@ from models import FileNode
 
 
 class NetworkScanner:
-    """Сканирует удалённое устройство через HTTP сервер (server.py).
-
-    Интерфейс намеренно совпадает с DirectoryScanner - start(), stop(),
-    те же колбэки - чтобы app.py мог использовать оба без изменений.
-
-    Args:
-        host (str): IP адрес или hostname удалённого устройства.
-        port (int): Порт сервера (по умолчанию 9090).
-        path (str): Путь для сканирования на удалённом устройстве.
-        progress_cb (callable): Колбэк вида progress_cb(count, current_path).
-        done_cb (callable): Колбэк вида done_cb(root_node).
-    """
-
     def __init__(self, host: str, port: int, path: str, progress_cb, done_cb):
         self.host = host
         self.port = port
@@ -41,20 +26,13 @@ class NetworkScanner:
         self._base_url = f"http://{host}:{port}"
 
     def start(self):
-        """Запускает сканирование в фоновом потоке."""
         t = threading.Thread(target=self._scan, daemon=True)
         t.start()
 
     def stop(self):
-        """Запрашивает остановку."""
         self._stop = True
 
     def ping(self) -> tuple[bool, str]:
-        """Проверяет что сервер доступен.
-
-        Returns:
-            tuple: (успех: bool, имя хоста или сообщение об ошибке: str)
-        """
         try:
             url = f"{self._base_url}/ping"
             with urlopen(url, timeout=3) as resp:
@@ -64,11 +42,6 @@ class NetworkScanner:
             return False, str(e)
 
     def get_roots(self) -> list[str]:
-        """Получает список корневых директорий с удалённого устройства.
-
-        Returns:
-            list[str]: Список путей (например ['C:\\', 'D:\\'] или ['/', '/home/user'])
-        """
         try:
             url = f"{self._base_url}/roots"
             with urlopen(url, timeout=5) as resp:
@@ -78,7 +51,6 @@ class NetworkScanner:
             return []
 
     def get_status(self) -> dict:
-        """Returns a short status report from the remote computer."""
         try:
             url = f"{self._base_url}/status"
             with urlopen(url, timeout=5) as resp:
@@ -87,7 +59,6 @@ class NetworkScanner:
             return {"error": str(e)}
 
     def analyze_path(self, path: str, scan_defender: bool = False) -> dict:
-        """Returns metadata for one remote file and can run Defender there."""
         try:
             params = urlencode({"path": path, "defender": "1" if scan_defender else "0"})
             url = f"{self._base_url}/analyze?{params}"
@@ -97,7 +68,6 @@ class NetworkScanner:
             return {"defender_status": f"Remote analyze failed: {e}"}
 
     def _scan(self):
-        """Запрашивает данные с сервера и строит дерево FileNode."""
         try:
             params = urlencode({"path": self.path, "max_items": 10000, "max_depth": 25})
             url = f"{self._base_url}/scan?{params}"
@@ -115,50 +85,24 @@ class NetworkScanner:
                 self.progress_cb(4, "Parsing response...")
                 raw = raw_bytes.decode("utf-8")
 
-            # Освобождаем байты до парсинга
             del raw_bytes
 
             self.progress_cb(1, "Обработка данных...")
             data = json.loads(raw)
-            def _count_nodes(d):
-                total = 1
-                for c in d.get("children", []):
-                    total += _count_nodes(c)
-                return total
-            print(f"[debug] total nods in JSON:{_count_nodes(data)}")
-
-            del raw  # освобождаем строку до построения дерева
+            del raw
             self.progress_cb(5, "Building file tree...")
 
             root = self._build_tree(data)
             self.done_cb(root)
 
         except HTTPError as e:
-            error_node = FileNode(
-                name=f"Ошибка {e.code}",
-                path=self.path,
-                is_dir=True,
-                scan_error=str(e)
-            )
-            self.done_cb(error_node)
+            self.done_cb(FileNode(name=f"Ошибка {e.code}", path=self.path, is_dir=True, scan_error=str(e)))
         except URLError as e:
-            error_node = FileNode(
-                name=f"Нет соединения: {e.reason}",
-                path=self.path,
-                is_dir=True,
-                scan_error=str(e.reason)
-            )
-            self.done_cb(error_node)
+            self.done_cb(FileNode(name=f"Нет соединения: {e.reason}", path=self.path, is_dir=True, scan_error=str(e.reason)))
         except Exception as e:
             import traceback
             traceback.print_exc()
-            error_node = FileNode(
-                name=f"Ошибка: {e}",
-                path=self.path,
-                is_dir=True,
-                scan_error=str(e)
-            )
-            self.done_cb(error_node)
+            self.done_cb(FileNode(name=f"Ошибка: {e}", path=self.path, is_dir=True, scan_error=str(e)))
 
     def _build_tree(self, data: dict) -> FileNode:
         """Итеративно строит дерево FileNode из JSON словаря (без рекурсии)."""
@@ -171,48 +115,31 @@ class NetworkScanner:
         apply_info_to_node(root, data)
 
         count = 0
-        # Стек: (список дочерних dict'ов, FileNode-родитель)
-        stack = [(data.get("children", []), root)]
+        # Каждый элемент стека: (dict узла, FileNode родителя)
+        # Кладём по одному узлу, а не списком — нет вложенных for внутри while
+        stack = [(child, root) for child in reversed(data.get("children", []))]
 
-        while stack:
-            if self._stop:
-                break
+        while stack and not self._stop:
+            child_data, parent_node = stack.pop()
 
-            children_data, parent_node = stack.pop()
+            if not isinstance(child_data, dict):
+                continue
 
-            for child_data in children_data:
-                count += 1
-                print(
-                    f"[debug] count={count}, path={child_data.get('path', '') if isinstance(child_data, dict) else child_data.path}")
-                if count > 100:
-                    print("[debug] something is looping, breaking")
-                    break
+            count += 1
+            if count == 1 or count % 250 == 0:
+                self.progress_cb(count, child_data.get("path", ""))
 
-                # на случай если в children оказался уже готовый FileNode
-                if isinstance(child_data, FileNode):
-                    child_data.parent = parent_node
-                    parent_node.children.append(child_data)
-                    if count == 1 or count % 250 == 0:
-                        self.progress_cb(count, child_data.path)
-                    if child_data.children:
-                        stack.append((child_data.children, child_data))
-                    continue
+            child = FileNode(
+                name=child_data.get("name", ""),
+                path=child_data.get("path", ""),
+                size=child_data.get("size", 0),
+                is_dir=child_data.get("is_dir", False),
+                parent=parent_node,
+            )
+            apply_info_to_node(child, child_data)
+            parent_node.children.append(child)
 
-                if count == 1 or count % 250 == 0:
-                    self.progress_cb(count, child_data.get("path", ""))
-
-                child = FileNode(
-                    name=child_data.get("name", ""),
-                    path=child_data.get("path", ""),
-                    size=child_data.get("size", 0),
-                    is_dir=child_data.get("is_dir", False),
-                    parent=parent_node,
-                )
-                apply_info_to_node(child, child_data)
-                parent_node.children.append(child)
-
-                grandchildren = child_data.get("children", [])
-                if grandchildren:
-                    stack.append((grandchildren, child))
+            for grandchild in reversed(child_data.get("children", [])):
+                stack.append((grandchild, child))
 
         return root

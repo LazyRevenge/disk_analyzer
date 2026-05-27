@@ -118,6 +118,12 @@ def scan_with_windows_defender(path: str) -> str:
 
 def _get_owner(path: Path) -> str:
     try:
+        if os.name == "nt":
+            import win32security
+            sd = win32security.GetFileSecurity(str(path), win32security.OWNER_SECURITY_INFORMATION)
+            sid = sd.GetSecurityDescriptorOwner()
+            name, domain, _ = win32security.LookupAccountSid(None, sid)
+            return f"{domain}\\{name}"
         return path.owner()
     except Exception:
         return "Unknown"

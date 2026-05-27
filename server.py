@@ -22,7 +22,7 @@ from urllib.parse import urlparse, parse_qs
 from file_info import analyze_path, get_system_status
 
 PORT = 9090
-DEFAULT_MAX_ITEMS = 50000
+DEFAULT_MAX_ITEMS = 100000
 DEFAULT_MAX_DEPTH = 50
 PROGRESS_EVERY = 500
 

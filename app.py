@@ -835,8 +835,12 @@ class DiskAnalyzerApp:
         if extra:
             text += f"\nСистемный файл: {extra}"
 
-        x = event.x_root + 14
-        y = event.y_root + 14
+        try:
+            x = event.x_root + 14
+            y = event.y_root + 14
+        except AttributeError:
+            x = self.root.winfo_pointerx() + 14
+            y = self.root.winfo_pointery() + 14
 
         self._tooltip = tk.Toplevel(self.root)
         self._tooltip.wm_overrideredirect(True)

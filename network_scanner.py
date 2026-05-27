@@ -182,6 +182,11 @@ class NetworkScanner:
 
             for child_data in children_data:
                 count += 1
+                print(
+                    f"[debug] count={count}, path={child_data.get('path', '') if isinstance(child_data, dict) else child_data.path}")
+                if count > 100:
+                    print("[debug] something is looping, breaking")
+                    break
 
                 # на случай если в children оказался уже готовый FileNode
                 if isinstance(child_data, FileNode):

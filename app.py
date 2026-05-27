@@ -798,6 +798,7 @@ class DiskAnalyzerApp:
         self._hide_tooltip()
 
     def _on_table_motion(self, event):
+        print(f"[debug] table motion, item={self._tree.identify_row(event.y)}")
         item = self._tree.identify_row(event.y)
         if not item:
             self._hide_tooltip()

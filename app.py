@@ -273,6 +273,8 @@ class DiskAnalyzerApp:
         xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self._tree.bind("<Double-Button-1>", self._on_table_double_click)
+        self._tree.bind("<Motion>", self._on_table_motion)
+        self._tree.bind("<Leave>", self._on_table_leave)
 
         pane.add(table_frame, minsize=420)
         pane.paneconfigure(table_frame, width=520)
@@ -795,7 +797,21 @@ class DiskAnalyzerApp:
         """
         self._hide_tooltip()
 
-    def _show_tooltip(self, event, node: FileNode):
+    def _on_table_motion(self, event):
+        item = self._tree.identify_row(event.y)
+        if not item:
+            self._hide_tooltip()
+            return
+        node = self._find_node_by_path(item)
+        if node and node.is_system and node.system_description:
+            self._show_tooltip(event, node, extra=node.system_description)
+        else:
+            self._hide_tooltip()
+
+    def _on_table_leave(self, event):
+        self._hide_tooltip()
+
+    def _show_tooltip(self, event, node: FileNode, extra: str = ""):
         """Создаёт всплывающее окно с информацией об узле.
 
         Уничтожает предыдущую подсказку (если была), затем создаёт
@@ -808,15 +824,15 @@ class DiskAnalyzerApp:
             node (FileNode): Узел, информацию о котором нужно показать.
         """
         self._hide_tooltip()
-
         total = self._current_node.size if self._current_node else 1
         pct = node.size / total * 100 if total else 0
-
         text = (
             f"{'📁' if node.is_dir else '📄'} {node.name}\n"
             f"Размер: {format_size(node.size)} ({pct:.1f}%)\n"
             f"Путь: {node.path}"
         )
+        if extra:
+            text += f"\nСистемный файл: {extra}"
 
         x = event.x_root + 14
         y = event.y_root + 14
@@ -936,7 +952,8 @@ class DiskAnalyzerApp:
                     child.owner,
                     "YES" if child.is_system else "NO",
                     child.defender_status,
-                )
+                ),
+                tags=(child.path,)
             )
 
     def _sort_table(self, col: str):

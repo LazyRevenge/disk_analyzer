@@ -69,7 +69,7 @@ class NetworkScanner:
 
     def _scan(self):
         try:
-            params = urlencode({"path": self.path, "max_items": 10000, "max_depth": 25})
+            params = urlencode({"path": self.path, "max_items": 50000, "max_depth": 50})
             url = f"{self._base_url}/scan?{params}"
 
             self.progress_cb(0, "Подключение к серверу...")

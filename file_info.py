@@ -63,6 +63,7 @@ def analyze_path(path: str, scan_defender: bool = False) -> dict:
 
 
 def apply_info_to_node(node, info: dict) -> None:
+    skip = {"children", "parent"}
     for key, value in info.items():
         if hasattr(node, key):
             setattr(node, key, value)

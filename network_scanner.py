@@ -175,6 +175,17 @@ class NetworkScanner:
 
             for child_data in children_data:
                 count += 1
+
+                # на случай если в children оказался уже готовый FileNode
+                if isinstance(child_data, FileNode):
+                    child_data.parent = parent_node
+                    parent_node.children.append(child_data)
+                    if count == 1 or count % 250 == 0:
+                        self.progress_cb(count, child_data.path)
+                    if child_data.children:
+                        stack.append((child_data.children, child_data))
+                    continue
+
                 if count == 1 or count % 250 == 0:
                     self.progress_cb(count, child_data.get("path", ""))
 

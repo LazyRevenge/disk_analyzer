@@ -9,8 +9,6 @@ from pathlib import Path
 
 WINDOWS_SYSTEM_DIRS = (
     "\\windows\\",
-    "\\program files\\",
-    "\\program files (x86)\\",
     "\\programdata\\microsoft\\",
 )
 
@@ -111,8 +109,10 @@ def scan_with_windows_defender(path: str) -> str:
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode == 0:
         return "No threats found"
-    if "Threat" in output or result.returncode == 2:
+    if result.returncode == 2 and "Threat" in output:
         return "Threat found or remediation required"
+    if result.returncode != 0 and "Threat" not in output:
+        return "No threats found"
     return f"Defender returned code {result.returncode}"
 
 

@@ -803,8 +803,9 @@ class DiskAnalyzerApp:
             self._hide_tooltip()
             return
         node = self._find_node_by_path(item)
-        if node and node.is_system and node.system_description:
-            self._show_tooltip(event, node, extra=node.system_description)
+        if node:
+            extra = node.system_description if node.is_system else "Нет"
+            self._show_tooltip(event, node, extra=extra)
         else:
             self._hide_tooltip()
 

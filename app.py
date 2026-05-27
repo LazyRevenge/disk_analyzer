@@ -76,6 +76,7 @@ class DiskAnalyzerApp:
         self._scan_mode = "local"
         self._remote_host = ""
         self._remote_port = 9090
+        self._remote_path = ""
 
         self._color_map = {}
 
@@ -155,6 +156,17 @@ class DiskAnalyzerApp:
             command=self._scan_selected_with_defender
         )
         self._btn_defender.pack(side=tk.RIGHT, padx=(0, 8))
+
+        self._btn_defender_dir = tk.Button(
+            top, text="[ SCAN FOLDER ]", font=mono_font,
+            fg="#FF595E", bg="#0F0F0F",
+            activeforeground="#000", activebackground="#FF595E",
+            relief=tk.FLAT, bd=1,
+            highlightbackground="#FF595E", highlightthickness=1,
+            cursor="hand2", padx=10,
+            command=self._scan_dir_with_defender
+        )
+        self._btn_defender_dir.pack(side=tk.RIGHT, padx=(0, 8))
 
         self._btn_back = tk.Button(
             top, text="[ ← BACK ]", font=mono_font,
@@ -317,32 +329,93 @@ class DiskAnalyzerApp:
         self._scanner.start()
 
     def _choose_remote_directory(self):
-        host = simpledialog.askstring("Remote scan", "Remote laptop IP or hostname:")
-        if not host:
-            return
-        port_raw = simpledialog.askstring("Remote scan", "Server port:", initialvalue=str(self._remote_port))
-        if not port_raw:
-            return
+        """Открывает кастомный диалог подключения к удалённому устройству."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Remote Scan")
+        dialog.configure(bg="#0F0F0F")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.lift()
+        dialog.attributes("-topmost", True)
+
+        dialog.update_idletasks()
+        pw, ph = 380, 230
+        rx = self.root.winfo_x() + (self.root.winfo_width() - pw) // 2
+        ry = self.root.winfo_y() + (self.root.winfo_height() - ph) // 2
+        dialog.geometry(f"{pw}x{ph}+{rx}+{ry}")
+
         try:
-            port = int(port_raw)
-        except ValueError:
-            messagebox.showerror("Remote scan", "Port must be a number.")
-            return
+            mf = font.Font(family="Consolas", size=9)
+        except Exception:
+            mf = font.Font(size=9)
 
-        probe = NetworkScanner(host, port, "", self._on_progress, self._on_scan_done)
-        ok, host_name = probe.ping()
-        if not ok:
-            messagebox.showerror("Remote scan", f"Cannot connect to {host}:{port}\n{host_name}")
-            return
+        pad = {"padx": 16, "pady": 4}
 
-        roots = probe.get_roots()
-        path = simpledialog.askstring(
-            "Remote scan",
-            f"Connected to {host_name}. Path to scan:",
-            initialvalue=roots[0] if roots else "C:\\"
-        )
-        if path:
+        tk.Label(dialog, text="IP или hostname:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        host_var = tk.StringVar(value=self._remote_host or "")
+        host_entry = tk.Entry(dialog, textvariable=host_var, font=mf, bg="#1A1A1A", fg="#00FF88",
+                              insertbackground="#00FF88", relief=tk.FLAT, bd=4)
+        host_entry.pack(fill=tk.X, padx=16, pady=(0, 6))
+
+        tk.Label(dialog, text="Порт:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        port_var = tk.StringVar(value=str(self._remote_port))
+        tk.Entry(dialog, textvariable=port_var, font=mf, bg="#1A1A1A", fg="#00FF88",
+                 insertbackground="#00FF88", relief=tk.FLAT, bd=4).pack(fill=tk.X, padx=16, pady=(0, 6))
+
+        tk.Label(dialog, text="Путь для сканирования:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        path_var = tk.StringVar(value=self._remote_path if hasattr(self, "_remote_path") else "")
+        tk.Entry(dialog, textvariable=path_var, font=mf, bg="#1A1A1A", fg="#00FF88",
+                 insertbackground="#00FF88", relief=tk.FLAT, bd=4).pack(fill=tk.X, padx=16, pady=(0, 10))
+
+        status_var = tk.StringVar(value="")
+        tk.Label(dialog, textvariable=status_var, fg="#E9C46A", bg="#0F0F0F", font=mf).pack()
+
+        def on_connect():
+            host = host_var.get().strip()
+            path = path_var.get().strip()
+            if not host:
+                status_var.set("Введи IP или hostname")
+                return
+            try:
+                port = int(port_var.get().strip())
+            except ValueError:
+                status_var.set("Порт должен быть числом")
+                return
+
+            status_var.set("Подключение...")
+            dialog.update()
+
+            probe = NetworkScanner(host, port, "", self._on_progress, self._on_scan_done)
+            ok, host_name = probe.ping()
+            if not ok:
+                status_var.set(f"Нет соединения: {host_name}")
+                return
+
+            if not path:
+                roots = probe.get_roots()
+                path = roots[0] if roots else "C:\\"
+                path_var.set(path)
+
+            self._remote_host = host
+            self._remote_port = port
+            self._remote_path = path
+
+            dialog.destroy()
             self._start_remote_scan(host, port, path)
+
+        tk.Button(
+            dialog, text="[ CONNECT & SCAN ]", font=mf,
+            fg="#00CCFF", bg="#0F0F0F",
+            activeforeground="#000", activebackground="#00CCFF",
+            relief=tk.FLAT, bd=1,
+            highlightbackground="#00CCFF", highlightthickness=1,
+            cursor="hand2", padx=10,
+            command=on_connect
+        ).pack(pady=(0, 10))
+
+        host_entry.focus_set()
+        dialog.bind("<Return>", lambda e: on_connect())
 
     def _start_remote_scan(self, host: str, port: int, path: str):
         if self._scanner:
@@ -434,6 +507,37 @@ class DiskAnalyzerApp:
         self._status_var.set(f"Defender: {status}")
         messagebox.showinfo("Defender check", f"{node.path}\n\n{status}")
 
+    def _scan_dir_with_defender(self):
+        """Сканирует текущую открытую папку целиком через Defender."""
+        node = self._current_node
+        if not node:
+            messagebox.showinfo("Defender", "Сначала открой папку.")
+            return
+
+        self._status_var.set(f"Defender scan folder: {node.path}")
+        self._btn_defender_dir.configure(state=tk.DISABLED)
+        self._btn_defender.configure(state=tk.DISABLED)
+
+        def worker():
+            if self._scan_mode == "remote":
+                scanner = NetworkScanner(
+                    self._remote_host, self._remote_port, "",
+                    self._on_progress, self._on_scan_done
+                )
+                info = scanner.analyze_path(node.path, scan_defender=True)
+                status = info.get("defender_status", "Defender result unavailable")
+            else:
+                status = scan_with_windows_defender(node.path)
+            self.root.after(0, lambda: self._finish_defender_dir(status))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_defender_dir(self, status: str):
+        self._btn_defender_dir.configure(state=tk.NORMAL)
+        self._btn_defender.configure(state=tk.NORMAL)
+        self._status_var.set(f"Defender: {status}")
+        messagebox.showinfo("Defender — папка", status)
+
     def _selected_node(self) -> Optional[FileNode]:
         sel = self._tree.selection()
         if not sel:
@@ -492,7 +596,8 @@ class DiskAnalyzerApp:
             f"{sum(1 for c in root_node.children if not c.is_dir)} файлов, "
             f"{sum(1 for c in root_node.children if c.is_dir)} папок"
         )
-        # Цвета и навигация
+
+    # Цвета и навигация
         if root_node.scan_error:
             self._status_var.set(f"Scan problem: {root_node.scan_error}")
             messagebox.showwarning("Scan problem", root_node.scan_error)

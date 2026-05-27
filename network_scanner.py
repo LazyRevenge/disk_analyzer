@@ -120,6 +120,13 @@ class NetworkScanner:
 
             self.progress_cb(1, "Обработка данных...")
             data = json.loads(raw)
+            def _count_nodes(d):
+                total = 1
+                for c in d.get("children", []):
+                    total += _count_nodes(c)
+                return total
+            print(f"[debug] total nods in JSON:{_count_nodes(data)}")
+
             del raw  # освобождаем строку до построения дерева
             self.progress_cb(5, "Building file tree...")
 

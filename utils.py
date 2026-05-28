@@ -23,6 +23,7 @@ def format_size(size: int) -> str:
         size /= 1024
     return f"{size:.1f} PB"
 
+
 COLORS = [
     "#E63946", "#457B9D", "#2A9D8F", "#E9C46A", "#F4A261",
     "#6A4C93", "#1982C4", "#8AC926", "#FF595E", "#6A994E",

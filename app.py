@@ -100,11 +100,11 @@ class DiskAnalyzerApp:
         """
         try:
             title_font = font.Font(family="Consolas", size=13, weight="bold")
-            mono_font  = font.Font(family="Consolas", size=10)
+            mono_font = font.Font(family="Consolas", size=10)
             small_font = font.Font(family="Consolas", size=9)
         except Exception:
             title_font = font.Font(size=13, weight="bold")
-            mono_font  = font.Font(size=10)
+            mono_font = font.Font(size=10)
             small_font = font.Font(size=9)
 
         top = tk.Frame(self.root, bg="#0F0F0F", pady=8)
@@ -214,9 +214,9 @@ class DiskAnalyzerApp:
                                  highlightthickness=0, cursor="crosshair")
         self._canvas.pack(fill=tk.BOTH, expand=True)
 
-        self._canvas.bind("<Configure>",       self._on_canvas_resize)
-        self._canvas.bind("<Motion>",          self._on_mouse_move)
-        self._canvas.bind("<Leave>",           self._on_mouse_leave)
+        self._canvas.bind("<Configure>", self._on_canvas_resize)
+        self._canvas.bind("<Motion>", self._on_mouse_move)
+        self._canvas.bind("<Leave>", self._on_mouse_leave)
         self._canvas.bind("<Double-Button-1>", self._on_double_click)
 
         pane.add(canvas_frame, minsize=400)
@@ -234,7 +234,8 @@ class DiskAnalyzerApp:
                   background=[("selected", "#00FF8844")],
                   foreground=[("selected", "#00FF88")])
 
-        cols = ("icon", "name", "size", "pct", "ext", "type", "modified", "owner", "system", "defender")
+        cols = ("icon", "name", "size", "pct", "ext", "type",
+                "modified", "owner", "system", "defender")
         self._tree = ttk.Treeview(table_frame, columns=cols, show="headings",
                                   style="Dark.Treeview", selectmode="browse")
 
@@ -243,7 +244,7 @@ class DiskAnalyzerApp:
                            command=lambda: self._sort_table("name"))
         self._tree.heading("size", text="SIZE ↕",
                            command=lambda: self._sort_table("size"))
-        self._tree.heading("pct",  text="%")
+        self._tree.heading("pct", text="%")
         self._tree.heading("ext", text="EXT")
         self._tree.heading("type", text="TYPE")
         self._tree.heading("modified", text="MODIFIED")
@@ -251,10 +252,11 @@ class DiskAnalyzerApp:
         self._tree.heading("system", text="SYSTEM")
         self._tree.heading("defender", text="DEFENDER")
 
-        self._tree.column("icon", width=20,  minwidth=20,  stretch=False, anchor="center")
+        self._tree.column("icon", width=20, minwidth=20,
+                          stretch=False, anchor="center")
         self._tree.column("name", width=170, minwidth=100, anchor="w")
-        self._tree.column("size", width=80,  minwidth=60,  anchor="e")
-        self._tree.column("pct",  width=50,  minwidth=40,  anchor="e")
+        self._tree.column("size", width=80, minwidth=60, anchor="e")
+        self._tree.column("pct", width=50, minwidth=40, anchor="e")
         self._tree.column("ext", width=70, minwidth=50, anchor="w")
         self._tree.column("type", width=150, minwidth=90, anchor="w")
         self._tree.column("modified", width=135, minwidth=110, anchor="w")
@@ -266,7 +268,8 @@ class DiskAnalyzerApp:
                                   command=self._tree.yview)
         xscrollbar = ttk.Scrollbar(table_frame, orient=tk.HORIZONTAL,
                                    command=self._tree.xview)
-        self._tree.configure(yscrollcommand=scrollbar.set, xscrollcommand=xscrollbar.set)
+        self._tree.configure(yscrollcommand=scrollbar.set,
+                             xscrollcommand=xscrollbar.set)
 
         self._tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -354,24 +357,29 @@ class DiskAnalyzerApp:
 
         pad = {"padx": 16, "pady": 4}
 
-        tk.Label(dialog, text="IP или hostname:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        tk.Label(dialog, text="IP или hostname:", fg="#888",
+                 bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
         host_var = tk.StringVar(value=self._remote_host or "")
         host_entry = tk.Entry(dialog, textvariable=host_var, font=mf, bg="#1A1A1A", fg="#00FF88",
                               insertbackground="#00FF88", relief=tk.FLAT, bd=4)
         host_entry.pack(fill=tk.X, padx=16, pady=(0, 6))
 
-        tk.Label(dialog, text="Порт:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        tk.Label(dialog, text="Порт:", fg="#888", bg="#0F0F0F",
+                 font=mf, anchor="w").pack(fill=tk.X, **pad)
         port_var = tk.StringVar(value=str(self._remote_port))
         tk.Entry(dialog, textvariable=port_var, font=mf, bg="#1A1A1A", fg="#00FF88",
                  insertbackground="#00FF88", relief=tk.FLAT, bd=4).pack(fill=tk.X, padx=16, pady=(0, 6))
 
-        tk.Label(dialog, text="Путь для сканирования:", fg="#888", bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
-        path_var = tk.StringVar(value=self._remote_path if hasattr(self, "_remote_path") else "")
+        tk.Label(dialog, text="Путь для сканирования:", fg="#888",
+                 bg="#0F0F0F", font=mf, anchor="w").pack(fill=tk.X, **pad)
+        path_var = tk.StringVar(
+            value=self._remote_path if hasattr(self, "_remote_path") else "")
         tk.Entry(dialog, textvariable=path_var, font=mf, bg="#1A1A1A", fg="#00FF88",
                  insertbackground="#00FF88", relief=tk.FLAT, bd=4).pack(fill=tk.X, padx=16, pady=(0, 10))
 
         status_var = tk.StringVar(value="")
-        tk.Label(dialog, textvariable=status_var, fg="#E9C46A", bg="#0F0F0F", font=mf).pack()
+        tk.Label(dialog, textvariable=status_var,
+                 fg="#E9C46A", bg="#0F0F0F", font=mf).pack()
 
         def on_connect():
             host = host_var.get().strip()
@@ -388,7 +396,8 @@ class DiskAnalyzerApp:
             status_var.set("Подключение...")
             dialog.update()
 
-            probe = NetworkScanner(host, port, "", self._on_progress, self._on_scan_done)
+            probe = NetworkScanner(
+                host, port, "", self._on_progress, self._on_scan_done)
             ok, host_name = probe.ping()
             if not ok:
                 status_var.set(f"Нет соединения: {host_name}")
@@ -450,10 +459,12 @@ class DiskAnalyzerApp:
         self._scanner.start()
 
     def _show_remote_status(self):
-        host = self._remote_host or simpledialog.askstring("Remote status", "Remote laptop IP or hostname:")
+        host = self._remote_host or simpledialog.askstring(
+            "Remote status", "Remote laptop IP or hostname:")
         if not host:
             return
-        port_raw = simpledialog.askstring("Remote status", "Server port:", initialvalue=str(self._remote_port))
+        port_raw = simpledialog.askstring(
+            "Remote status", "Server port:", initialvalue=str(self._remote_port))
         if not port_raw:
             return
         try:
@@ -462,7 +473,8 @@ class DiskAnalyzerApp:
             messagebox.showerror("Remote status", "Port must be a number.")
             return
 
-        scanner = NetworkScanner(host, port, "", self._on_progress, self._on_scan_done)
+        scanner = NetworkScanner(
+            host, port, "", self._on_progress, self._on_scan_done)
         status = scanner.get_status()
         if "error" in status:
             messagebox.showerror("Remote status", status["error"])
@@ -481,7 +493,8 @@ class DiskAnalyzerApp:
     def _scan_selected_with_defender(self):
         node = self._selected_node()
         if not node:
-            messagebox.showinfo("Defender check", "Select a file or folder in the table first.")
+            messagebox.showinfo(
+                "Defender check", "Select a file or folder in the table first.")
             return
 
         self._status_var.set(f"Defender scan started: {node.path}")
@@ -489,15 +502,19 @@ class DiskAnalyzerApp:
 
         def worker():
             if self._scan_mode == "remote":
-                scanner = NetworkScanner(self._remote_host, self._remote_port, "", self._on_progress, self._on_scan_done)
+                scanner = NetworkScanner(
+                    self._remote_host, self._remote_port, "", self._on_progress, self._on_scan_done)
                 info = scanner.analyze_path(node.path, scan_defender=True)
-                status = info.get("defender_status", "Remote Defender result unavailable")
-                self.root.after(0, lambda: self._apply_defender_result(node, info, status))
+                status = info.get("defender_status",
+                                  "Remote Defender result unavailable")
+                self.root.after(
+                    0, lambda: self._apply_defender_result(node, info, status))
             else:
                 status = scan_with_windows_defender(node.path)
                 info = analyze_path(node.path)
                 info["defender_status"] = status
-                self.root.after(0, lambda: self._apply_defender_result(node, info, status))
+                self.root.after(
+                    0, lambda: self._apply_defender_result(node, info, status))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -527,7 +544,8 @@ class DiskAnalyzerApp:
                     self._on_progress, self._on_scan_done
                 )
                 info = scanner.analyze_path(node.path, scan_defender=True)
-                status = info.get("defender_status", "Defender result unavailable")
+                status = info.get("defender_status",
+                                  "Defender result unavailable")
             else:
                 status = scan_with_windows_defender(node.path)
             self.root.after(0, lambda: self._finish_defender_dir(status))
@@ -645,8 +663,8 @@ class DiskAnalyzerApp:
             self._current_node = node
             self._render_current()
 
-
     # Отрисовка
+
     def _render_current(self):
         """Перерисовывает тримап и таблицу для текущего узла.
 
@@ -713,11 +731,11 @@ class DiskAnalyzerApp:
             if rw > 40 and rh > 20:
                 label = node_item.name
                 if rw < 100:
-                    label = label[:8]  + "…" if len(label) > 8  else label
+                    label = label[:8] + "…" if len(label) > 8 else label
                 elif rw < 200:
                     label = label[:16] + "…" if len(label) > 16 else label
 
-                icon     = "📁" if node_item.is_dir else "📄"
+                icon = "📁" if node_item.is_dir else "📄"
                 size_str = format_size(node_item.size)
 
                 self._canvas.create_text(
@@ -942,7 +960,7 @@ class DiskAnalyzerApp:
         )
 
         for child in children:
-            pct  = child.size / total * 100
+            pct = child.size / total * 100
             icon = "▶" if child.is_dir else " "
 
             self._tree.insert(

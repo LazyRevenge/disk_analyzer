@@ -60,7 +60,8 @@ class NetworkScanner:
 
     def analyze_path(self, path: str, scan_defender: bool = False) -> dict:
         try:
-            params = urlencode({"path": path, "defender": "1" if scan_defender else "0"})
+            params = urlencode(
+                {"path": path, "defender": "1" if scan_defender else "0"})
             url = f"{self._base_url}/analyze?{params}"
             with urlopen(url, timeout=190) as resp:
                 return json.loads(resp.read().decode("utf-8"))
@@ -69,7 +70,8 @@ class NetworkScanner:
 
     def _scan(self):
         try:
-            params = urlencode({"path": self.path, "max_items": 100000, "max_depth": 50})
+            params = urlencode(
+                {"path": self.path, "max_items": 100000, "max_depth": 50})
             url = f"{self._base_url}/scan?{params}"
 
             self.progress_cb(0, "Подключение к серверу...")
@@ -78,7 +80,8 @@ class NetworkScanner:
             with urlopen(request, timeout=600) as resp:
                 self.progress_cb(1, "Reading response from server...")
                 raw_bytes = resp.read()
-                self.progress_cb(2, f"Received {len(raw_bytes) / 1024 / 1024:.1f} MB")
+                self.progress_cb(
+                    2, f"Received {len(raw_bytes) / 1024 / 1024:.1f} MB")
                 if resp.headers.get("Content-Encoding", "").lower() == "gzip":
                     self.progress_cb(3, "Decompressing response...")
                     raw_bytes = gzip.decompress(raw_bytes)
@@ -96,13 +99,16 @@ class NetworkScanner:
             self.done_cb(root)
 
         except HTTPError as e:
-            self.done_cb(FileNode(name=f"Ошибка {e.code}", path=self.path, is_dir=True, scan_error=str(e)))
+            self.done_cb(FileNode(
+                name=f"Ошибка {e.code}", path=self.path, is_dir=True, scan_error=str(e)))
         except URLError as e:
-            self.done_cb(FileNode(name=f"Нет соединения: {e.reason}", path=self.path, is_dir=True, scan_error=str(e.reason)))
+            self.done_cb(FileNode(
+                name=f"Нет соединения: {e.reason}", path=self.path, is_dir=True, scan_error=str(e.reason)))
         except Exception as e:
             import traceback
             traceback.print_exc()
-            self.done_cb(FileNode(name=f"Ошибка: {e}", path=self.path, is_dir=True, scan_error=str(e)))
+            self.done_cb(
+                FileNode(name=f"Ошибка: {e}", path=self.path, is_dir=True, scan_error=str(e)))
 
     def _build_tree(self, data: dict) -> FileNode:
         """Итеративно строит дерево FileNode из JSON словаря (без рекурсии)."""

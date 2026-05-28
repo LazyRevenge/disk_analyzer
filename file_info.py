@@ -49,10 +49,12 @@ def analyze_path(path: str, scan_defender: bool = False) -> dict:
         guessed_type = mimetypes.guess_type(path)[0]
         info["file_type"] = guessed_type or f"{info['extension']} file"
 
-    info["modified"] = dt.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+    info["modified"] = dt.datetime.fromtimestamp(
+        stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
     info["owner"] = _get_owner(p)
     info["attributes"] = _get_attributes(path, stat)
-    info["is_system"], info["system_description"] = _detect_system_file(path, info["attributes"])
+    info["is_system"], info["system_description"] = _detect_system_file(
+        path, info["attributes"])
 
     if scan_defender:
         info["defender_status"] = scan_with_windows_defender(path)
@@ -120,7 +122,8 @@ def _get_owner(path: Path) -> str:
     try:
         if os.name == "nt":
             import win32security
-            sd = win32security.GetFileSecurity(str(path), win32security.OWNER_SECURITY_INFORMATION)
+            sd = win32security.GetFileSecurity(
+                str(path), win32security.OWNER_SECURITY_INFORMATION)
             sid = sd.GetSecurityDescriptorOwner()
             name, domain, _ = win32security.LookupAccountSid(None, sid)
             return f"{domain}\\{name}"
@@ -166,8 +169,10 @@ def _find_mpcmdrun() -> str:
         return direct
 
     candidates = [
-        Path(os.environ.get("ProgramFiles", "")) / "Windows Defender" / "MpCmdRun.exe",
-        Path(os.environ.get("ProgramData", "")) / "Microsoft" / "Windows Defender" / "Platform",
+        Path(os.environ.get("ProgramFiles", "")) /
+        "Windows Defender" / "MpCmdRun.exe",
+        Path(os.environ.get("ProgramData", "")) /
+        "Microsoft" / "Windows Defender" / "Platform",
     ]
     for candidate in candidates:
         if candidate.is_file():

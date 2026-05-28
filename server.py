@@ -14,8 +14,6 @@ server.py
 import os
 import json
 import gzip
-import threading
-import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -87,7 +85,8 @@ def scan_directory(path: str, state: ScanState | None = None, depth: int = 0) ->
 
         state.items += 1
         if state.items % PROGRESS_EVERY == 0:
-            print(f"[scan progress] {state.items} items, current: {entry.path}", flush=True)
+            print(
+                f"[scan progress] {state.items} items, current: {entry.path}", flush=True)
 
         if entry.is_dir(follow_symlinks=False):
             if _is_reparse_or_symlink(entry):
@@ -154,7 +153,8 @@ class ScanHandler(BaseHTTPRequestHandler):
 
         # GET /ping - проверка что сервер живой
         if parsed.path == "/ping":
-            self._respond(200, {"status": "ok", "host": os.environ.get("COMPUTERNAME", os.uname().nodename if hasattr(os, 'uname') else "unknown")})
+            self._respond(200, {"status": "ok", "host": os.environ.get(
+                "COMPUTERNAME", os.uname().nodename if hasattr(os, 'uname') else "unknown")})
             return
 
         # GET /roots - список корневых директорий (диски на Windows, / на Linux)
@@ -192,15 +192,21 @@ class ScanHandler(BaseHTTPRequestHandler):
                 self._respond(400, {"error": detail})
                 return
 
-            max_items = _parse_positive_int(params.get("max_items", [DEFAULT_MAX_ITEMS])[0], DEFAULT_MAX_ITEMS)
-            max_depth = _parse_positive_int(params.get("max_depth", [DEFAULT_MAX_DEPTH])[0], DEFAULT_MAX_DEPTH)
+            max_items = _parse_positive_int(params.get(
+                "max_items", [DEFAULT_MAX_ITEMS])[0], DEFAULT_MAX_ITEMS)
+            max_depth = _parse_positive_int(params.get(
+                "max_depth", [DEFAULT_MAX_DEPTH])[0], DEFAULT_MAX_DEPTH)
             state = ScanState(max_items=max_items, max_depth=max_depth)
 
-            print(f"[scan] {path} (max_items={max_items}, max_depth={max_depth})", flush=True)
+            print(
+                f"[scan] {path} (max_items={max_items}, max_depth={max_depth})", flush=True)
             data = scan_directory(path, state)
             data["scan_items"] = state.items
             data["scan_truncated"] = state.truncated
-            print(f"[scan done] {path}: {state.items} scanned, {len(data.get('children', []))} top items, {data.get('size', 0)} bytes", flush=True)
+            msg = (f"[scan done] {path}: {state.items} scanned, "
+                   f"{len(data.get('children', []))} top items, "
+                   f"{data.get('size', 0)} bytes")
+            print(msg, flush=True)
             print("[response] preparing JSON...", flush=True)
             self._respond(200, data)
             print("[response] sent", flush=True)
@@ -227,7 +233,8 @@ class ScanHandler(BaseHTTPRequestHandler):
     def _respond(self, code: int, data: dict):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         raw_size = len(body)
-        accepts_gzip = "gzip" in self.headers.get("Accept-Encoding", "").lower()
+        accepts_gzip = "gzip" in self.headers.get(
+            "Accept-Encoding", "").lower()
         if accepts_gzip:
             body = gzip.compress(body)
         print(
@@ -259,8 +266,8 @@ class ScanHandler(BaseHTTPRequestHandler):
 def main():
     server = ThreadingHTTPServer(("0.0.0.0", PORT), ScanHandler)
     print(f"Сервер запущен на порту {PORT}")
-    print(f"Подключись с другого устройства, введя IP этого компьютера")
-    print(f"Остановить: Ctrl+C")
+    print("Подключись с другого устройства, введя IP этого компьютера")
+    print("Остановить: Ctrl+C")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
